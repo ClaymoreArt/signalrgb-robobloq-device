@@ -16,23 +16,26 @@ export function ControllableParameters() {
 }
 
 export function Initialize() {
-
+  initpacket1(device);
 }
+
 
 var vLedNames = [ "Led 1" ]; 
 var vLedPositions = [ [0,0] ];
 
 export function LedNames() {
-
+  return vLedNames;
 }
-
+export function DeviceType() {
+  return "Other";
+}
 export function LedPositions() {
-
+  return vLedPositions;
 }
 
 export function Render() {
   sendColors();
-
+  
 }
 
 export function Shutdown() {
@@ -50,37 +53,58 @@ function hexToRgb(hex) {
 }
 
 export function Validate(endpoint) {
-	return endpoint.interface === 0 && endpoint.usage === 0 && endpoint.usage_page === 0;
+  console.log("validating endpoint", endpoint);
+  return true;
+  //return endpoint.interface === 0 && endpoint.usage === 0x0001 && endpoint.usage_page === 0xff00;
 }
 
 export function ImageUrl() {
 	return "";
 }
 function sendColors(shutdown = false) {
-  let lightingMode = device.properties.LightingMode; // pega a propriedade do device
+  let lightingMode = device.properties.LightingMode;
   let forcedColor = device.properties.forcedColor;
   let shutdownColor = device.properties.shutdownColor;
-  
+
   let packet = [];
-  // ... seu código de pacote ...
+
+  // HEADER
+  packet[0] = 0x52;
+  packet[1] = 0x42;
+  packet[2] = 0x10;
+  packet[3] = 0x12;
+  packet[4] = 0x86;
+  packet[5] = 0x01;
+  packet[6] = 0xff;
+  packet[7] = 0x00;
+  packet[8] = 0x00;
+  packet[9] = 0x47;
+  packet[10] = 0x48;
+  packet[11] = 0x00;
+  packet[12] = 0x00;
+  packet[13] = 0x00;
+  packet[14] = 0xfe;
+  packet[15] = 0xc9;
+
+  for (let i = 16; i < 65; i++) packet[i] = 0x00;
 
   for (let i = 0; i < vLedPositions.length; i++) {
-    let base = i * 4 + 5;
-    packet[base] = 0x01;
+let base = i * 3 + 16; // Começa do byte 16 pra frente
 
     let color;
-    if (shutdown) {
-      color = hexToRgb(shutdownColor);
-    } else if (lightingMode === "Forced") {
-      color = hexToRgb(forcedColor);
-    } else {
-      color = device.color(...vLedPositions[i]);
-    }
+    if (shutdown) color = hexToRgb(shutdownColor);
+    else if (lightingMode === "Forced") color = hexToRgb(forcedColor);
+    else color = device.color(...vLedPositions[i]);
 
-    packet[base + 1] = color[0];
-    packet[base + 2] = color[1];
-    packet[base + 3] = color[2];
+    packet[base] = color[0];     // R
+    packet[base + 1] = color[1]; // G
+    packet[base + 2] = color[2]; // B
+
   }
+
+  device.write(packet, 65);
+
+
 }
 
 var vLedNames = [];
@@ -111,24 +135,32 @@ for (let y = 14; y >= 0; y--) {
 
 function initpacket1(device) {
   // Seu pacote, traduzido byte a byte, separado por vírgulas
-  let packet = [
-    0x52, 0x42, 0x10, 0x12, 0x86, 0x01, 0xff, 0x00,
-    0x00, 0x47, 0x48, 0x00, 0x00, 0x00, 0xfe, 0xc9,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-  ];
+   let packet = [];
 
-  // Garantir que o pacote tenha 65 bytes (se precisar, adiciona zeros)
-  while (packet.length < 65) packet.push(0x00);
+  packet[0] = 0x52;
+  packet[1] = 0x42;
+  packet[2] = 0x10;
+  packet[3] = 0x12;
+  packet[4] = 0x86;
+  packet[5] = 0x01;
+  packet[6] = 0xff;
+  packet[7] = 0x00;
+
+  packet[8] = 0x00;
+  packet[9] = 0x47;
+  packet[10] = 0x48;
+  packet[11] = 0x00;
+  packet[12] = 0x00;
+  packet[13] = 0x00;
+  packet[14] = 0xfe;
+  packet[15] = 0xc9;
+
+  // Os próximos bytes (16 até 64) são todos zeros
+  for(let i = 16; i < 65; i++) {
+    packet[i] = 0x00;
+  }
 
   device.write(packet, 65);
 }
 
-export function Validate(endpoint) {
-  // Testa os valores que aparecem no log
-  return endpoint.interface === 0 && endpoint.usage === 0x0001 && endpoint.usage_page === 0xff00;
-}
+
