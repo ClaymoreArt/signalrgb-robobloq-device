@@ -34,6 +34,9 @@ export function Render() {
 export function Shutdown() {
 
 }
+export function Initialize() {
+ initpacket1();
+}
 
 function hexToRgb(hex) {
 	let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -58,13 +61,12 @@ function sendColors(shutdown = false)
   let packet = [];
 
   // Header fixo baseado no que vc viu no Wireshark
-  packet[0] = 0x00; // nao e zero-padded, entao esse byte e valido
-  packet[1] = 0x52;
-  packet[2] = 0x42;
-  packet[3] = 0x10;
-  packet[4] = 0x7A; // esse muda, mas pode fixar como 0x7A mesmo (tipo de comando)
-  packet[5] = 0x86;
-  packet[6] = 0x01;
+  packet[0] = 0x52;
+  packet[1] = 0x42;
+  packet[2] = 0x10;
+  packet[3] = 0x7A; // esse muda, mas pode fixar como 0x7A mesmo (tipo de comando)
+  packet[4] = 0x86;
+
 
   // A partir daqui comecam os dados RGB
   for (let i = 0; i < vLedPositions.length; i++) {
@@ -118,4 +120,14 @@ for (let x = 0; x < 41; x++) {
 // Barra direita (vertical) - 15 LEDs (de cima pra baixo)
 for (let y = 0; y < 15; y++) {
   vLedPositions.push([41, 14 - y]);
+}
+
+function initpacket1() 
+{
+  let packet = [];
+  packet[0] = 0x52;
+  packet[1] = 0x42;
+  packet[2] = 0x10;
+  packet[3] = 0x12;
+  device.write(packet,65)
 }
